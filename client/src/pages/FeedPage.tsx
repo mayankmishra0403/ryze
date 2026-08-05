@@ -372,17 +372,25 @@ export function FeedPage() {
                         {post.authorName}
                       </Link>
                       {post.authorId !== user?.id && (
-                        <button
-                          type="button"
-                          onClick={() => void handleFollow(post.authorId)}
-                          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors ${
-                            followingIds.has(post.authorId)
-                              ? 'border-brand-200 bg-brand-50 text-brand-600'
-                              : 'border-ink-300 text-ink-500 hover:border-brand-500 hover:text-brand-600'
-                          }`}
-                        >
-                          {followingIds.has(post.authorId) ? 'Following' : '+ Follow'}
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => void handleFollow(post.authorId)}
+                            className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide transition-colors ${
+                              followingIds.has(post.authorId)
+                                ? 'border-brand-200 bg-brand-50 text-brand-600'
+                                : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50'
+                            }`}
+                          >
+                            {followingIds.has(post.authorId) ? 'Following ✓' : '+ Follow'}
+                          </button>
+                          <Link
+                            to={`/chat?userId=${post.authorId}`}
+                            className="rounded-full border border-ink-200 bg-ink-50 px-2 py-0.5 text-[10px] font-bold text-ink-600 hover:bg-ink-100 transition-colors"
+                          >
+                            💬 Message
+                          </Link>
+                        </div>
                       )}
                     </span>
                     <span className="text-xs text-ink-400">{timeAgo(post.createdAt)}</span>

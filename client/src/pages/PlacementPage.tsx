@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
   addExperience,
@@ -937,8 +938,14 @@ function ExperiencesTab({ onError }: { onError: (e: unknown) => void }) {
                   <img src={avatarUrl(exp.authorAvatar ?? null, exp.authorName)} alt="" className="h-7 w-7 rounded-full" />
                   <div>
                     <h4 className="font-semibold text-ink-900">{exp.role}</h4>
-                    <p className="text-xs text-ink-500">
-                      {exp.companyName} · by {exp.authorName} · {timeAgo(exp.createdAt)}
+                    <p className="text-xs text-ink-500 flex items-center gap-2">
+                      <span>{exp.companyName} · by {exp.authorName} · {timeAgo(exp.createdAt)}</span>
+                      <Link
+                        to={`/chat?userId=${exp.authorId}`}
+                        className="rounded-md bg-ink-100 px-1.5 py-0.5 text-[10px] font-bold text-ink-700 hover:bg-brand-50 hover:text-brand-700"
+                      >
+                        💬 Message
+                      </Link>
                     </p>
                   </div>
                 </div>

@@ -55,7 +55,7 @@ chatRouter.get(
           }
         : { id: { not: req.userId! } },
       orderBy: { name: 'asc' },
-      take: 20,
+      take: 50,
       select: { id: true, name: true, email: true, avatarUrl: true, role: true },
     })
     res.json({ users })

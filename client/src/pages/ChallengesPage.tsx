@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import {
   createChallenge,
@@ -374,6 +375,14 @@ export function ChallengesPage() {
                   {entry.name}
                   {entry.userId === user?.id && <span className="text-ink-400"> (you)</span>}
                 </span>
+                {entry.userId !== user?.id && (
+                  <Link
+                    to={`/chat?userId=${entry.userId}`}
+                    className="rounded-lg border border-ink-200 bg-ink-50 px-2 py-1 text-xs font-semibold text-ink-700 hover:bg-brand-50 hover:text-brand-700 transition-colors"
+                  >
+                    💬 Message
+                  </Link>
+                )}
                 <Badge tone="brand">{entry.solved} solved</Badge>
               </li>
             ))}
