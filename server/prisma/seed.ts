@@ -44,6 +44,24 @@ async function main() {
     },
   })
 
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@ryze.dev' },
+    update: {},
+    create: {
+      email: 'admin@ryze.dev',
+      name: 'System Admin',
+      passwordHash,
+      role: 'admin',
+      isVerified: true,
+      profile: {
+        create: {
+          bio: 'Platform Administrator.',
+          skills: ['DevOps', 'Security', 'Management'],
+        },
+      },
+    },
+  })
+
   const amazon = await prisma.company.upsert({
     where: { name: 'Amazon' },
     update: {},
