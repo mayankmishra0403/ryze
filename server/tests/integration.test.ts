@@ -191,6 +191,158 @@ describe('integration', () => {
         ),
       )
     })
+
+    test('post kind/title, save, threaded replies, follow + following feed', async () => {
+      const a = await registerUser()
+      const b = await registerUser()
+
+      // b creates a "question" post with a title
+      const created = await api('/api/posts', {
+        method: 'POST',
+        token: b.token,
+        body: { content: 'What is a good approach for DP?', kind: 'question', title: 'DP help', tags: ['dp'] },
+      })
+      assert.equal(created.status, 201)
+      assert.equal(created.data.post.kind, 'question')
+      assert.equal(created.data.post.title, 'DP help')
+      const postId = created.data.post.id
+
+      // a saves it -> saved tab shows it, saved flag true
+      const save = await api(`/api/posts/${postId}/save`, { method: 'POST', token: a.token })
+      assert.equal(save.data.saved, true)
+      const savedFeed = await api('/api/posts?feed=saved', { token: a.token })
+      assert.ok(savedFeed.data.posts.some((p: any) => p.id === postId))
+      const savedView = savedFeed.data.posts.find((p: any) => p.id === postId)
+      assert.equal(savedView.saved, true)
+
+      // a follows b -> following feed includes b's post
+      const follow = await api(`/api/profile/${b.id}/follow`, { method: 'POST', token: a.token })
+      assert.equal(follow.data.following, true)
+      const followingFeed = await api('/api/posts?feed=following', { token: a.token })
+      assert.ok(followingFeed.data.posts.some((p: any) => p.id === postId))
+
+      // a follows b got a notification
+      const notifs = await api('/api/notifications', { token: b.token })
+      assert.ok(notifs.data.notifications.some((n: any) => n.type === 'follow'))
+
+      // a replies to b's comment thread
+      const root = await api(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        token: b.token,
+        body: { content: 'Try recursion first.' },
+      })
+      const reply = await api(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        token: a.token,
+        body: { content: 'Got it, thanks!', parentId: root.data.comment.id },
+      })
+      assert.equal(reply.data.comment.parentId, root.data.comment.id)
+
+      const thread = await api(`/api/posts/${postId}/comments`, { token: a.token })
+      const parent = thread.data.comments.find((c: any) => c.id === root.data.comment.id)
+      assert.equal(parent.parentId, null)
+      const child = thread.data.comments.find((c: any) => c.id === reply.data.comment.id)
+      assert.equal(child.parentId, root.data.comment.id)
+
+      // b got a reply notification
+      const bNotifs = await api('/api/notifications', { token: b.token })
+      assert.ok(bNotifs.data.notifications.some((n: any) => n.type === 'comment' && n.body.includes('replied')))
+
+      // a's follow graph lists b
+      const follows = await api(`/api/profile/${a.id}/follows`, { token: a.token })
+      assert.ok(follows.data.following.some((u: any) => u.id === b.id))
+    })
+
+    test('challenge judge: run, submit verdicts, stats', async () => {
+      const user = await registerUser()
+      const { prisma } = await import('../src/db.js')
+      const challenge = await prisma.challenge.create({
+        data: {
+          title: 'Judge Test Sum',
+          description: 'solve(nums) returns the sum of an array',
+          difficulty: 'easy',
+          points: 10,
+          date: new Date(),
+          createdBy: user.id,
+          testcases: {
+            create: [
+              { input: '[1,2,3]', expectedOutput: '6', isPublic: true, order: 0 },
+              { input: '[10]', expectedOutput: '10', isPublic: true, order: 1 },
+              { input: '[1,1,1]', expectedOutput: '3', isPublic: false, order: 2 },
+            ],
+          },
+        },
+      })
+
+      // run against public tests without saving
+      const run = await api(`/api/challenges/${challenge.id}/run`, {
+        method: 'POST',
+        token: user.token,
+        body: { code: 'function solve(nums){ return nums.reduce((a,b)=>a+b,0) }', language: 'javascript' },
+      })
+      assert.equal(run.status, 200)
+      assert.equal(run.data.status, 'accepted')
+      assert.equal(run.data.passedTests, 2)
+
+      // wrong answer -> no points, status persists
+      const wrong = await api(`/api/challenges/${challenge.id}/submit`, {
+        method: 'POST',
+        token: user.token,
+        body: { code: 'function solve(nums){ return 0 }', language: 'javascript' },
+      })
+      assert.equal(wrong.status, 201)
+      assert.equal(wrong.data.solved, false)
+      assert.equal(wrong.data.result.status, 'wrong_answer')
+
+      // correct answer -> solved, points earned, hidden tests pass
+      const good = await api(`/api/challenges/${challenge.id}/submit`, {
+        method: 'POST',
+        token: user.token,
+        body: { code: 'function solve(nums){ return nums.reduce((a,b)=>a+b,0) }', language: 'javascript' },
+      })
+      assert.equal(good.status, 201)
+      assert.equal(good.data.solved, true)
+      assert.equal(good.data.result.status, 'accepted')
+      assert.equal(good.data.points, 10)
+
+      const stats = await api('/api/challenges/me/stats', { token: user.token })
+      assert.equal(stats.status, 200)
+      const mine = stats.data.recent.find((s: any) => s.challengeId === challenge.id)
+      assert.equal(mine.status, 'accepted')
+      assert.equal(mine.passedTests, 3)
+
+      // leaderboard counts only solved
+      const leaderboard = await api('/api/challenges/leaderboard', { token: user.token })
+      const entry = leaderboard.data.leaderboard.find((e: any) => e.userId === user.id)
+      assert.ok(entry && entry.solved >= 1)
+    })
+
+    test('ai knowledge search + assistant fallback', async () => {
+      const user = await registerUser()
+
+      const ingest = await api('/api/ai/knowledge/ingest', {
+        method: 'POST',
+        token: user.token,
+        body: { title: 'Test DP Doc', content: 'Dynamic programming breaks problems into overlapping subproblems.', tags: ['dp'] },
+      })
+      assert.equal(ingest.status, 403) // students cannot ingest
+
+      const search = await api('/api/ai/knowledge/search', {
+        method: 'POST',
+        token: user.token,
+        body: { query: 'dynamic programming subproblems' },
+      })
+      assert.equal(search.status, 200)
+
+      const chat = await api('/api/ai/assistant', {
+        method: 'POST',
+        token: user.token,
+        body: { messages: [{ role: 'user', content: 'How do I start with dynamic programming?' }] },
+      })
+      assert.equal(chat.status, 200)
+      assert.ok(typeof chat.data.reply === 'string')
+      assert.ok(Array.isArray(chat.data.sources))
+    })
   })
 
   describe('profile', () => {
@@ -214,6 +366,36 @@ describe('integration', () => {
       assert.equal(me.status, 200)
       assert.equal(me.data.profile.skills.length, 2)
       assert.equal(me.data.profile.college, 'NIT Trichy')
+    })
+
+    test('public profile: stats, isFollowing, follow graph', async () => {
+      const a = await registerUser()
+      const b = await registerUser()
+
+      // b posts once so stats.posts reflects it
+      await api('/api/posts', {
+        method: 'POST',
+        token: b.token,
+        body: { content: 'Public profile test post' },
+      })
+
+      // a follows b
+      await api(`/api/profile/${b.id}/follow`, { method: 'POST', token: a.token })
+
+      const pub = await api(`/api/profile/${b.id}`, { token: a.token })
+      assert.equal(pub.status, 200)
+      assert.equal(pub.data.user.name, b.name)
+      assert.equal(pub.data.stats.followers, 1)
+      assert.equal(pub.data.stats.posts, 1)
+      assert.equal(pub.data.isFollowing, true)
+
+      // own view: isFollowing false
+      const own = await api(`/api/profile/${a.id}`, { token: a.token })
+      assert.equal(own.data.isFollowing, false)
+
+      // 404 for unknown user
+      const missing = await api('/api/profile/does-not-exist', { token: a.token })
+      assert.equal(missing.status, 404)
     })
   })
 

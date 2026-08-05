@@ -2,8 +2,10 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { config } from '../config.js'
 import { prisma } from '../db.js'
-import { asyncHandler, authGuard, type AuthedRequest } from '../middleware/auth.js'
+import { asyncHandler, authGuard, roleGuard, type AuthedRequest } from '../middleware/auth.js'
 import { HttpError } from '../middleware/error.js'
+import { searchKnowledge, ingestKnowledge, listKnowledge } from '../services/knowledge.js'
+import { chatCompletion } from '../services/llm.js'
 
 export const aiRouter = Router()
 
@@ -114,15 +116,108 @@ aiRouter.post(
   '/assistant',
   asyncHandler(async (req: AuthedRequest, res) => {
     const body = assistantSchema.parse(req.body)
-    if (config.ai.baseUrl) {
+
+    // Forward to the dedicated AI team service when configured.
+    if (config.ai.baseUrl && !config.ai.apiKey) {
       const data = await forwardToAi('/assistant', { messages: body.messages }, req.userId!)
       res.json(data)
       return
     }
+
     const last = body.messages[body.messages.length - 1]
-    res.json(
-      `Mock assistant: I can help with placement preparation, learning roadmaps, and startup collaboration. (Received: "${last?.content?.slice(0, 80)}")`,
-    )
+    const question = last?.content ?? ''
+
+    // RAG retrieval over the self-hosted knowledge base.
+    const hits = await searchKnowledge(question, 4)
+    const context = hits
+      .map(
+        (h, i) =>
+          `[${i + 1}] ${h.title} (source: ${h.source ?? 'knowledge base'})\n${h.content.slice(0, 800)}`,
+      )
+      .join('\n\n')
+
+    const system =
+      context.length > 0
+        ? `You are RYZE, a placement-prep and learning assistant for CS students in India.\nAnswer the user's question using the knowledge snippets below. Cite them by number like [1], [2]. If the snippets are not enough, say so and give a short general answer.\n\nKnowledge snippets:\n${context}`
+        : 'You are RYZE, a placement-prep and learning assistant for CS students in India. Keep answers concise and actionable.'
+
+    const reply = await chatCompletion([
+      { role: 'system', content: system },
+      ...body.messages.map((m) => ({ role: m.role, content: m.content })),
+    ])
+
+    if (reply) {
+      res.json({ reply: reply.content, sources: hits.map((h) => ({ id: h.id, title: h.title, source: h.source })) })
+      return
+    }
+
+    // No API key or LLM call failed — fall back to an answer grounded in the
+    // retrieved knowledge so the assistant still works self-hosted.
+    res.json({
+      reply: buildFallbackAnswer(question, hits),
+      sources: hits.map((h) => ({ id: h.id, title: h.title, source: h.source })),
+      mock: true,
+    })
+  }),
+)
+
+function buildFallbackAnswer(
+  question: string,
+  hits: { id: string; title: string; content: string; source: string | null }[],
+): string {
+  if (hits.length === 0) {
+    return 'I can help with placement preparation, learning roadmaps, and startup collaboration. Try asking about interview prep, a learning roadmap, or which company to target first. (No knowledge base configured — add AI_API_KEY to unlock live answers.)'
+  }
+  const snippet = hits[0]
+  return `Based on the knowledge base: ${snippet.title}${
+    snippet.source ? ` (${snippet.source})` : ''
+  }. ${snippet.content.slice(0, 500)}`
+}
+
+const ingestSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  content: z.string().trim().min(1).max(20000),
+  source: z.string().trim().max(300).nullable().optional(),
+  tags: z.array(z.string().trim().min(1).max(30)).max(10).default([]),
+})
+
+// GET /api/ai/knowledge?search=...&limit=...
+aiRouter.get(
+  '/knowledge',
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const limit = Math.min(Number(req.query.limit ?? 20), 50)
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined
+    res.json({ docs: await listKnowledge(limit, search) })
+  }),
+)
+
+// POST /api/ai/knowledge/search — semantic-ish retrieval for the client
+aiRouter.post(
+  '/knowledge/search',
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const body = z.object({ query: z.string().trim().min(1).max(1000) }).parse(req.body)
+    const hits = await searchKnowledge(body.query, 6)
+    res.json({
+      results: hits.map((h) => ({
+        id: h.id,
+        title: h.title,
+        content: h.content,
+        source: h.source,
+        tags: h.tags,
+        score: h.score,
+      })),
+    })
+  }),
+)
+
+// POST /api/ai/knowledge/ingest — mentors can grow the knowledge base
+aiRouter.post(
+  '/knowledge/ingest',
+  roleGuard('mentor', 'admin'),
+  asyncHandler(async (req: AuthedRequest, res) => {
+    const body = ingestSchema.parse(req.body)
+    const doc = await ingestKnowledge(body)
+    res.status(201).json({ id: doc.id })
   }),
 )
 

@@ -38,6 +38,8 @@ enum NotificationType {
   challenge
   startup
   interest
+  follow
+  save
   system
 }
 
@@ -57,7 +59,10 @@ model User {
   profile             Profile?
   posts               Post[]
   postLikes           PostLike[]
+  savedPosts          PostSave[]
   comments            Comment[]
+  following           Follow[] @relation("UserFollowing")
+  followers           Follow[] @relation("UserFollowers")
   notes               Note[]
   interviewExperiences InterviewExperience[]
   challengeSubmissions ChallengeSubmission[]
@@ -110,6 +115,8 @@ model Profile {
 model Post {
   id        String   @id @default(cuid())
   authorId  String
+  kind      String   @default("text")
+  title     String?
   content   String   @db.Text
   tags      String[] @default([])
   createdAt DateTime @default(now())
@@ -117,6 +124,7 @@ model Post {
 
   author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
   likes     PostLike[]
+  saves     PostSave[]
   comments  Comment[]
 
   @@index([authorId])
@@ -135,18 +143,48 @@ model PostLike {
   @@index([userId])
 }
 
+model PostSave {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([userId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
 model Comment {
   id        String   @id @default(cuid())
   postId    String
   authorId  String
+  parentId  String?
   content   String   @db.Text
   createdAt DateTime @default(now())
 
-  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post   Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent Comment?  @relation("CommentThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentThread")
 
   @@index([postId])
   @@index([authorId])
+  @@index([parentId])
 }
 
 model Note {
@@ -265,14 +303,30 @@ model Challenge {
   difficulty  ChallengeDifficulty @default(easy)
   tags        String[]            @default([])
   points      Int                 @default(10)
+  solution    String?             @db.Text
   date        DateTime
   createdBy   String
   createdAt   DateTime            @default(now())
 
   submissions ChallengeSubmission[]
+  testcases   Testcase[]
 
   @@index([date])
   @@index([difficulty])
+}
+
+model Testcase {
+  id             String   @id @default(cuid())
+  challengeId    String
+  input          String   @db.Text
+  expectedOutput String   @db.Text
+  isPublic       Boolean  @default(true)
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([challengeId])
 }
 
 model ChallengeSubmission {
@@ -282,6 +336,9 @@ model ChallengeSubmission {
   code        String   @db.Text
   language    String   @default("javascript")
   status      String   @default("submitted")
+  passedTests Int      @default(0)
+  totalTests  Int      @default(0)
+  runtimeMs   Int?
   createdAt   DateTime @default(now())
 
   challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
@@ -433,6 +490,20 @@ model LearningEvent {
 
   @@index([userId, createdAt])
   @@index([type])
+}
+
+// Curated study material the AI assistant can retrieve answers from.
+model KnowledgeDoc {
+  id         String    @id @default(cuid())
+  title      String
+  content    String    @db.Text
+  source     String?
+  tags       String[]  @default([])
+  embeddedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([title])
+  @@index([tags])
 }
 
 // Outputs written back by the AI service via our API.

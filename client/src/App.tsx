@@ -12,6 +12,7 @@ import { NotesPage } from './pages/NotesPage'
 import { StartupPage } from './pages/StartupPage'
 import { ChatPage } from './pages/ChatPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { PublicProfilePage } from './pages/PublicProfilePage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="/startup" element={<StartupPage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/profile/:id" element={<PublicProfilePage />} />
             </Route>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

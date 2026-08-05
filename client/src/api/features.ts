@@ -2,6 +2,7 @@ import { http, getToken } from './client'
 import { API_URL } from '../config'
 import type {
   Challenge,
+  ChallengeDetail,
   ChallengeStats,
   ChallengeSubmission,
   Comment,
@@ -10,10 +11,13 @@ import type {
   InterviewExperience,
   Job,
   JobApplication,
+  JudgeResult,
   LeaderboardEntry,
   Note,
   Post,
+  PostKind,
   Profile,
+  PublicProfile,
   Pyq,
   Roadmap,
   Startup,
@@ -80,31 +84,74 @@ export async function uploadAvatar(file: File): Promise<{ avatarUrl: string }> {
 
 // ---- Community feed ----
 
+export type FeedFilter = 'all' | 'following' | 'saved'
+
 export interface PostList {
   posts: Post[]
   nextCursor: string | null
 }
 
-export function getPosts(limit = 20, cursor?: string): Promise<PostList> {
-  const params = new URLSearchParams({ limit: String(limit) })
+export function getPosts(
+  limit = 20,
+  cursor?: string,
+  feed: FeedFilter = 'all',
+): Promise<PostList> {
+  const params = new URLSearchParams({ limit: String(limit), feed })
   if (cursor) params.set('cursor', cursor)
   return http.get<PostList>(`/posts?${params.toString()}`)
 }
 
-export function createPost(content: string, tags: string[]): Promise<{ post: Post }> {
-  return http.post<{ post: Post }>('/posts', { content, tags })
+export function createPost(input: {
+  content: string
+  tags?: string[]
+  kind?: PostKind
+  title?: string
+}): Promise<{ post: Post }> {
+  return http.post<{ post: Post }>('/posts', {
+    content: input.content,
+    tags: input.tags ?? [],
+    kind: input.kind ?? 'text',
+    title: input.title ?? null,
+  })
 }
 
 export function toggleLike(postId: string): Promise<{ liked: boolean; likeCount: number }> {
   return http.post<{ liked: boolean; likeCount: number }>(`/posts/${postId}/like`)
 }
 
+export function toggleSave(postId: string): Promise<{ saved: boolean; saveCount: number }> {
+  return http.post<{ saved: boolean; saveCount: number }>(`/posts/${postId}/save`)
+}
+
 export function getComments(postId: string): Promise<{ comments: Comment[] }> {
   return http.get<{ comments: Comment[] }>(`/posts/${postId}/comments`)
 }
 
-export function addComment(postId: string, content: string): Promise<{ comment: Comment }> {
-  return http.post<{ comment: Comment }>(`/posts/${postId}/comments`, { content })
+export function addComment(
+  postId: string,
+  content: string,
+  parentId?: string | null,
+): Promise<{ comment: Comment }> {
+  return http.post<{ comment: Comment }>(`/posts/${postId}/comments`, { content, parentId })
+}
+
+// ---- Follows ----
+
+export function toggleFollow(userId: string): Promise<{ following: boolean; followerCount: number }> {
+  return http.post<{ following: boolean; followerCount: number }>(`/profile/${userId}/follow`)
+}
+
+export interface FollowList {
+  following: { id: string; name: string; avatarUrl: string | null }[]
+  followers: { id: string; name: string; avatarUrl: string | null }[]
+}
+
+export function getFollows(userId: string): Promise<FollowList> {
+  return http.get<FollowList>(`/profile/${userId}/follows`)
+}
+
+export function getPublicProfile(userId: string): Promise<PublicProfile> {
+  return http.get<PublicProfile>(`/profile/${userId}`)
 }
 
 // ---- Notes sharing ----
@@ -287,8 +334,10 @@ export interface ChallengeList {
 
 export interface SubmitResult {
   submission: ChallengeSubmission
-  streak: { current: number; longest: number; lastActive: string | null }
+  result: JudgeResult
+  solved: boolean
   points: number
+  streak: { current: number; longest: number; lastActive: string | null }
 }
 
 export interface ChallengeStatsResponse {
@@ -299,6 +348,10 @@ export interface ChallengeStatsResponse {
     title: string
     difficulty: string
     points: number
+    status: string
+    passedTests: number | null
+    totalTests: number | null
+    runtimeMs: number | null
     date: string
     createdAt: string
   }[]
@@ -314,12 +367,21 @@ export function getChallenges(difficulty?: string): Promise<ChallengeList> {
   return http.get<ChallengeList>(`/challenges?${qs.toString()}`)
 }
 
+export function getChallengeDetail(id: string): Promise<{
+  challenge: ChallengeDetail
+  submission: (Pick<ChallengeSubmission, 'status' | 'passedTests' | 'totalTests' | 'runtimeMs'> & {}) | null
+}> {
+  return http.get(`/challenges/${id}`)
+}
+
 export function createChallenge(input: {
   title: string
   description: string
   difficulty: string
   tags: string[]
   points: number
+  solution?: string
+  testcases?: { input: string; expectedOutput: string; isPublic: boolean }[]
 }): Promise<{ challenge: Challenge }> {
   return http.post<{ challenge: Challenge }>('/challenges', input)
 }
@@ -330,6 +392,14 @@ export function submitChallenge(
   language = 'javascript',
 ): Promise<SubmitResult> {
   return http.post<SubmitResult>(`/challenges/${challengeId}/submit`, { code, language })
+}
+
+export function runChallenge(
+  challengeId: string,
+  code: string,
+  language = 'javascript',
+): Promise<JudgeResult> {
+  return http.post<JudgeResult>(`/challenges/${challengeId}/run`, { code, language })
 }
 
 export function getChallengeStats(): Promise<ChallengeStatsResponse> {

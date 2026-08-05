@@ -48,7 +48,6 @@ export function ChallengesPage() {
   const [recent, setRecent] = useState<(Challenge & { createdAt: string })[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [code, setCode] = useState('')
-  const [language, setLanguage] = useState('javascript')
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -85,20 +84,32 @@ export function ChallengesPage() {
     setError(null)
     setNotice(null)
     try {
-      const result = await submitChallenge(today.id, code.trim(), language)
-      setStats((prev) =>
-        prev
-          ? {
-              ...prev,
-              submittedCount: prev.submittedCount + (prev.todaySubmitted ? 0 : 1),
-              totalPoints: prev.totalPoints + (prev.todaySubmitted ? 0 : result.points),
-              todaySubmitted: true,
-              streak: result.streak,
-            }
-          : prev,
-      )
-      setToday((prev) => (prev ? { ...prev, submitted: true } : prev))
-      setNotice(`Solved! +${result.points} points, streak ${result.streak.current} 🔥`)
+      const result = await submitChallenge(today.id, code.trim(), 'javascript')
+      if (result.solved) {
+        setStats((prev) =>
+          prev
+            ? {
+                ...prev,
+                submittedCount: prev.submittedCount + (prev.todaySubmitted ? 0 : 1),
+                totalPoints: prev.totalPoints + (prev.todaySubmitted ? 0 : result.points),
+                todaySubmitted: true,
+                streak: result.streak,
+              }
+            : prev,
+        )
+        setToday((prev) => (prev ? { ...prev, submitted: true } : prev))
+        setNotice(`Solved! +${result.points} points, streak ${result.streak.current} 🔥`)
+      } else {
+        const passed = result.result.passedTests
+        const total = result.result.totalTests
+        const hint =
+          result.result.status === 'runtime_error'
+            ? 'Runtime error — check your solve() function.'
+            : result.result.status === 'tle'
+              ? 'Time limit exceeded — too slow.'
+              : `${passed}/${total} tests passed — keep trying!`
+        setNotice(hint)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Submit failed')
     } finally {
@@ -113,7 +124,24 @@ export function ChallengesPage() {
     const title = String(data.get('title') ?? '').trim()
     const description = String(data.get('description') ?? '').trim()
     if (!title || !description) return
+
+    const parseCases = (raw: string, isPublic: boolean) => {
+      const trimmed = raw.trim()
+      if (!trimmed) return []
+      const parsed = JSON.parse(trimmed)
+      if (!Array.isArray(parsed)) throw new Error('Test cases must be a JSON array')
+      return parsed.map((tc: { input?: unknown; expectedOutput?: unknown }) => ({
+        input: String(tc.input ?? ''),
+        expectedOutput: String(tc.expectedOutput ?? ''),
+        isPublic,
+      }))
+    }
+
     try {
+      const testcases = [
+        ...parseCases(String(data.get('publicTestcases') ?? ''), true),
+        ...parseCases(String(data.get('hiddenTestcases') ?? ''), false),
+      ]
       await createChallenge({
         title,
         description,
@@ -123,6 +151,8 @@ export function ChallengesPage() {
           .map((t) => t.trim())
           .filter(Boolean),
         points: Number(data.get('points') ?? 10),
+        solution: String(data.get('solution') ?? '').trim() || undefined,
+        testcases,
       })
       setNotice('Challenge created')
       form.reset()
@@ -154,7 +184,11 @@ export function ChallengesPage() {
       {(notice || error) && (
         <p
           className={`rounded-lg px-3 py-2 text-sm ${
-            error ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+            error
+              ? 'bg-red-50 text-red-700'
+              : notice?.startsWith('Solved!')
+                ? 'bg-green-50 text-green-700'
+                : 'bg-amber-50 text-amber-800'
           }`}
         >
           {error ?? notice}
@@ -205,9 +239,8 @@ export function ChallengesPage() {
               />
             ) : (
               <CodeEditorSandbox
+                challengeId={today.id}
                 initialCode={code}
-                language={language}
-                onLanguageChange={setLanguage}
                 onSubmitSolution={(solutionCode) => {
                   setCode(solutionCode)
                   const fakeEvent = { preventDefault: () => {} } as FormEvent
@@ -247,6 +280,26 @@ export function ChallengesPage() {
               </label>
               <Input name="points" label="Points" type="number" defaultValue={10} min={1} max={500} />
               <Input name="tags" label="Tags" placeholder="arrays, dp" />
+            </div>
+            <Textarea
+              name="solution"
+              label="Reference solution (optional)"
+              rows={4}
+              placeholder="function solve(input) { ... }"
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Textarea
+                name="publicTestcases"
+                label="Public test cases (JSON)"
+                rows={4}
+                placeholder='[{"input":"[1,2,3]","expectedOutput":"[3,2,1]"}]'
+              />
+              <Textarea
+                name="hiddenTestcases"
+                label="Hidden test cases (JSON)"
+                rows={4}
+                placeholder='[{"input":"[9,9,9]","expectedOutput":"[9,9,9]"}]'
+              />
             </div>
             <div className="flex justify-end">
               <Button type="submit">Create challenge</Button>

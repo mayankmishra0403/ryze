@@ -4,6 +4,7 @@ import { ai } from '../api'
 import { Card, Badge, EmptyState } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Spinner } from '../components/ui/Button'
+import { KnowledgeAssistant } from '../components/ai/KnowledgeAssistant'
 import type { AiRecommendation, AiReport } from '../types'
 
 export function DashboardPage() {
@@ -73,6 +74,8 @@ export function DashboardPage() {
           </div>
         </Card>
       )}
+
+      <KnowledgeAssistant />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card

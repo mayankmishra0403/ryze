@@ -32,6 +32,11 @@ export const config = {
   ai: {
     baseUrl: process.env.AI_BASE_URL ?? '',
     serviceKey: process.env.AI_SERVICE_KEY ?? '',
+    // Direct LLM access (OpenAI-compatible or Google Gemini) for the
+    // self-hosted RAG knowledge assistant. Falls back to mock when empty.
+    provider: process.env.AI_PROVIDER ?? 'auto',
+    apiKey: process.env.AI_API_KEY ?? '',
+    model: process.env.AI_MODEL ?? 'gpt-4o-mini',
   },
 
   uploadDir: process.env.UPLOAD_DIR ?? './uploads',

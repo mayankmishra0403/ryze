@@ -55,6 +55,7 @@ Open http://localhost:5173 — sign in with `student@ryze.dev` / `password123`.
 | `JWT_*` / `OAUTH_STATE_SECRET` | server `.env` | Auth secrets |
 | `GOOGLE_CLIENT_ID/SECRET` | server `.env` | Enables "Continue with Google" (button + flow already built) |
 | `AI_BASE_URL` / `AI_SERVICE_KEY` | server `.env` | Point to AI team service; blank = mock mode |
+| `AI_PROVIDER` / `AI_API_KEY` / `AI_MODEL` | server + deploy `.env` | Self-hosted RAG assistant. `AI_PROVIDER=auto\|openai\|gemini`; set `AI_API_KEY` (OpenAI or Gemini) for live LLM answers — blank = answers from the knowledge base with mock text |
 | `VITE_AI_ENABLED` | client `.env` | Route AI calls to real proxy |
 | `POSTGRES_*`, secrets | deploy `.env` | Production values |
 

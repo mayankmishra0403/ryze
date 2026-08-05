@@ -15,7 +15,7 @@ export async function logEvent(
 /** Create a notification row and push it in realtime to the recipient. */
 export async function notify(
   userId: string,
-  type: 'like' | 'comment' | 'mention' | 'challenge' | 'startup' | 'interest' | 'system',
+  type: 'like' | 'comment' | 'mention' | 'challenge' | 'startup' | 'interest' | 'follow' | 'save' | 'system',
   title: string,
   body: string,
 ): Promise<void> {

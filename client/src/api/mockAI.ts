@@ -1,8 +1,10 @@
 import type { AiProvider } from './ai'
 import type {
   AiAssistantMessage,
+  AiChatResult,
   AiRecommendation,
   AiReport,
+  KnowledgeDoc,
 } from '../types'
 
 /**
@@ -82,15 +84,58 @@ export const mockAi: AiProvider = {
     }
   },
 
-  async chat(messages: AiAssistantMessage[]): Promise<string> {
+  async chat(messages: AiAssistantMessage[]): Promise<AiChatResult> {
     const last = messages[messages.length - 1]
     const question = last?.content.toLowerCase() ?? ''
     if (question.includes('interview')) {
-      return 'Great — here is a plan. Start with the Amazon SDE sheet: focus on arrays, strings, and hashmaps. Practice 2 medium problems daily and time yourself. After that, move to system design basics (load balancing, caching, databases). Want me to break down a specific topic?'
+      return {
+        reply:
+          'Great — here is a plan. Start with the Amazon SDE sheet: focus on arrays, strings, and hashmaps. Practice 2 medium problems daily and time yourself. After that, move to system design basics (load balancing, caching, databases). Want me to break down a specific topic?',
+        sources: [{ id: 'kb-interview', title: 'Amazon SDE Interview Process', source: 'Mentor handbook' }],
+      }
     }
     if (question.includes('roadmap')) {
-      return 'For a solid 6-month roadmap: (1) Master DSA with daily challenges, (2) Build 2 full-stack projects, (3) Complete 10 mock interviews on this platform, (4) Start applying to internships in month 4. I can tailor this to your branch and target companies.'
+      return {
+        reply:
+          'For a solid 6-month roadmap: (1) Master DSA with daily challenges, (2) Build 2 full-stack projects, (3) Complete 10 mock interviews on this platform, (4) Start applying to internships in month 4. I can tailor this to your branch and target companies.',
+        sources: [{ id: 'kb-roadmap', title: '6-Month DSA Preparation Plan', source: 'Mentor handbook' }],
+      }
     }
-    return 'I can help with placement preparation, learning roadmaps, project guidance, and startup collaboration. Try asking about interview prep, a learning roadmap, or which company to target first.'
+    return {
+      reply:
+        'I can help with placement preparation, learning roadmaps, project guidance, and startup collaboration. Try asking about interview prep, a learning roadmap, or which company to target first.',
+      sources: [],
+    }
+  },
+
+  async searchKnowledge(query: string): Promise<KnowledgeDoc[]> {
+    const q = query.toLowerCase()
+    if (q.includes('interview') || q.includes('amazon')) {
+      return [
+        {
+          id: 'kb-interview',
+          title: 'Amazon SDE Interview Process',
+          content:
+            'Amazon SDE interviews typically have 4-5 rounds: an online assessment, coding rounds, and leadership principles. Prioritise arrays, strings, hashmaps and sliding window.',
+          source: 'Mentor handbook',
+          tags: ['interview', 'amazon', 'sde'],
+          score: 0.9,
+        },
+      ]
+    }
+    if (q.includes('roadmap') || q.includes('dsa')) {
+      return [
+        {
+          id: 'kb-roadmap',
+          title: '6-Month DSA Preparation Plan',
+          content:
+            'Months 1-2: arrays, strings, hashmaps, two pointers. Month 3: trees and graphs. Month 4: dynamic programming. Month 5: system design basics. Month 6: mock interviews.',
+          source: 'Mentor handbook',
+          tags: ['dsa', 'roadmap'],
+          score: 0.95,
+        },
+      ]
+    }
+    return []
   },
 }

@@ -39,6 +39,14 @@ class AiManager implements AiProvider {
       return mockAi.chat(messages)
     }
   }
+
+  async searchKnowledge(query: string) {
+    try {
+      return await this.provider.searchKnowledge(query)
+    } catch {
+      return mockAi.searchKnowledge(query)
+    }
+  }
 }
 
 export const ai = new AiManager()

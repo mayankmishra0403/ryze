@@ -8,6 +8,10 @@ const buckets = new Map<string, { count: number; resetAt: number }>()
  */
 export function rateLimit(windowMs: number, max: number): RequestHandler {
   return (req, res, next) => {
+    if (process.env.NODE_ENV === 'test') {
+      next()
+      return
+    }
     const key = req.ip ?? 'unknown'
     const now = Date.now()
     const bucket = buckets.get(key)

@@ -164,14 +164,33 @@ async function main() {
     update: {},
     create: {
       id: 'seed-challenge-1',
-      title: 'Reverse a Linked List',
-      description: 'Given the head of a singly linked list, reverse the list and return its head.',
-      difficulty: 'medium',
-      tags: ['linked-list'],
+      title: 'Reverse an Array',
+      description:
+        'Given an integer array nums, reverse it and return the reversed array. Write a function solve(nums) that returns the reversed array.',
+      difficulty: 'easy',
+      tags: ['array'],
       points: 20,
+      solution:
+        'function solve(nums) { return nums.slice().reverse() }',
       date: new Date(),
       createdBy: mentor.id,
     },
+  })
+
+  await prisma.testcase.deleteMany({
+    where: { challengeId: { in: ['seed-challenge-1', 'seed-challenge-2'] } },
+  })
+  await prisma.testcase.createMany({
+    data: [
+      { challengeId: 'seed-challenge-1', input: '[1,2,3,4]', expectedOutput: '[4,3,2,1]', isPublic: true, order: 0 },
+      { challengeId: 'seed-challenge-1', input: '[5]', expectedOutput: '[5]', isPublic: true, order: 1 },
+      { challengeId: 'seed-challenge-1', input: '[7,8,9]', expectedOutput: '[9,8,7]', isPublic: false, order: 2 },
+      { challengeId: 'seed-challenge-1', input: '[]', expectedOutput: '[]', isPublic: false, order: 3 },
+      { challengeId: 'seed-challenge-2', input: '[1,2,3,1]', expectedOutput: 'true', isPublic: true, order: 0 },
+      { challengeId: 'seed-challenge-2', input: '[1,2,3,4]', expectedOutput: 'false', isPublic: true, order: 1 },
+      { challengeId: 'seed-challenge-2', input: '[1,1,1,3,3,4,3,2,4,2]', expectedOutput: 'true', isPublic: false, order: 2 },
+      { challengeId: 'seed-challenge-2', input: '[]', expectedOutput: 'false', isPublic: false, order: 3 },
+    ],
   })
 
   const yesterday = new Date(Date.now() - 86_400_000)
@@ -216,6 +235,10 @@ async function main() {
       userId: student.id,
       code: 'function containsDuplicate(nums) { return new Set(nums).size !== nums.length }',
       language: 'javascript',
+      status: 'accepted',
+      passedTests: 4,
+      totalTests: 4,
+      runtimeMs: 12,
     },
   })
 
@@ -227,6 +250,10 @@ async function main() {
       userId: student.id,
       code: 'class LRUCache { constructor(c) { this.cap = c; this.map = new Map() } get(k) { if (!this.map.has(k)) return -1; const v = this.map.get(k); this.map.delete(k); this.map.set(k, v); return v } put(k, v) { if (this.map.has(k)) this.map.delete(k); this.map.set(k, v); if (this.map.size > this.cap) this.map.delete(this.map.keys().next().value) } }',
       language: 'javascript',
+      status: 'submitted',
+      passedTests: 0,
+      totalTests: 0,
+      runtimeMs: 0,
     },
   })
 
@@ -238,6 +265,10 @@ async function main() {
       userId: mentor.id,
       code: 'function containsDuplicate(nums) { const seen = new Set(); for (const n of nums) { if (seen.has(n)) return true; seen.add(n) } return false }',
       language: 'javascript',
+      status: 'accepted',
+      passedTests: 4,
+      totalTests: 4,
+      runtimeMs: 9,
     },
   })
 
@@ -317,6 +348,55 @@ async function main() {
       downloadCount: 128,
     },
   })
+
+  const knowledgeDocs = [
+    {
+      id: 'seed-kb-1',
+      title: 'Amazon SDE Interview Process',
+      content:
+        'Amazon SDE interviews typically have 4-5 rounds: an online assessment (2-3 coding problems), 1-2 coding rounds focused on data structures and algorithms, a system design round for senior roles, and a leadership principles round. Practice with the STAR method for behavioural questions. Prioritise arrays, strings, hashmaps, trees and sliding window patterns. Expect medium difficulty problems with follow-ups on time and space complexity.',
+      source: 'Mentor handbook',
+      tags: ['interview', 'amazon', 'sde'],
+    },
+    {
+      id: 'seed-kb-2',
+      title: '6-Month DSA Preparation Plan',
+      content:
+        'Month 1-2: Master arrays, strings, hashmaps and two pointers. Month 3: Trees, graphs and BFS/DFS. Month 4: Dynamic programming — start with classic problems like climbing stairs and knapsack. Month 5: System design basics — load balancing, caching, databases, API design. Month 6: Mock interviews, revise company-tagged questions, and focus on weak topics. Solve at least one challenge daily to build a streak.',
+      source: 'Mentor handbook',
+      tags: ['dsa', 'roadmap', 'preparation'],
+    },
+    {
+      id: 'seed-kb-3',
+      title: 'Writing Solutions for the Code Judge',
+      content:
+        'The RYZE code judge runs your solution as a Node.js script. Define a function named solve(input) that receives the parsed JSON testcase input and returns the expected output. The judge compares your return value to the expected output after JSON normalisation, so number precision within 1e-9 is accepted. Solutions must finish within 3 seconds and 128MB of memory. Public test cases are visible; hidden test cases are used for the final verdict.',
+      source: 'Platform docs',
+      tags: ['judge', 'challenges', 'javascript'],
+    },
+    {
+      id: 'seed-kb-4',
+      title: 'Building a Strong Resume for Off-Campus Placements',
+      content:
+        'Keep your resume to one page. Lead with a strong summary and skills section that matches the job description. List 2-3 projects with measurable impact (e.g. "cut query time by 40%"). Include one or two competitive programming achievements. Tailor keywords for ATS screening. Get your resume reviewed by a mentor on RYZE before applying.',
+      source: 'Career services',
+      tags: ['resume', 'placement', 'offcampus'],
+    },
+  ]
+  for (const doc of knowledgeDocs) {
+    await prisma.knowledgeDoc.upsert({
+      where: { id: doc.id },
+      update: {},
+      create: {
+        id: doc.id,
+        title: doc.title,
+        content: doc.content,
+        source: doc.source,
+        tags: doc.tags,
+        embeddedAt: new Date(),
+      },
+    })
+  }
 
   console.log('Seeded users:', student.email, mentor.email)
   console.log('Seeded companies:', amazon.name, google.name)

@@ -22,21 +22,28 @@ export interface Profile {
   linkedinUrl: string | null
 }
 
+export type PostKind = 'text' | 'challenge' | 'note' | 'question'
+
 export interface Post {
   id: string
   authorId: string
   authorName: string
   authorAvatar: string | null
+  kind: PostKind
+  title: string | null
   content: string
   tags: string[]
   likeCount: number
   commentCount: number
   createdAt: string
+  liked?: boolean
+  saved?: boolean
 }
 
 export interface Comment {
   id: string
   postId: string
+  parentId: string | null
   authorId: string
   authorName: string
   authorAvatar: string | null
@@ -135,6 +142,44 @@ export interface CompanyDetail {
   roadmaps: Roadmap[]
 }
 
+export type JudgeStatus =
+  | 'accepted'
+  | 'wrong_answer'
+  | 'runtime_error'
+  | 'tle'
+  | 'unsupported'
+  | 'submitted'
+
+export interface JudgeTestResult {
+  input: string
+  passed: boolean
+  expected: string
+  actual: string
+  error?: string | null
+  runtimeMs: number
+}
+
+export interface JudgeResult {
+  status: JudgeStatus
+  passedTests: number
+  totalTests: number
+  runtimeMs: number
+  tests: JudgeTestResult[]
+}
+
+export interface ChallengeDetail {
+  id: string
+  title: string
+  description: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  tags: string[]
+  points: number
+  date: string
+  createdAt: string
+  submitted: boolean
+  testcases: { id: string; input: string; expectedOutput: string }[]
+}
+
 export interface Challenge {
   id: string
   title: string
@@ -154,6 +199,9 @@ export interface ChallengeSubmission {
   code: string
   language: string
   status: string
+  passedTests: number | null
+  totalTests: number | null
+  runtimeMs: number | null
   createdAt: string
 }
 
@@ -271,4 +319,51 @@ export interface AiReport {
 export interface AiAssistantMessage {
   role: 'user' | 'assistant'
   content: string
+}
+
+export interface AiKnowledgeSource {
+  id: string
+  title: string
+  source: string | null
+}
+
+export interface AiChatResult {
+  reply: string
+  sources: AiKnowledgeSource[]
+  mock?: boolean
+}
+
+export interface KnowledgeDoc {
+  id: string
+  title: string
+  content: string
+  source: string | null
+  tags: string[]
+  score?: number
+}
+
+export interface PublicProfile {
+  user: {
+    id: string
+    name: string
+    role: Role
+    avatarUrl: string | null
+    joinedAt: string
+  }
+  profile: {
+    bio: string | null
+    branch: string | null
+    year: number | null
+    college: string | null
+    skills: string[]
+    githubUrl: string | null
+    linkedinUrl: string | null
+  } | null
+  stats: {
+    followers: number
+    following: number
+    posts: number
+    solved: number
+  }
+  isFollowing: boolean
 }
