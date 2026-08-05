@@ -275,6 +275,7 @@ export interface ChatMessage {
   senderAvatar: string | null
   content: string
   createdAt: string
+  pending?: boolean
 }
 
 export interface Notification {

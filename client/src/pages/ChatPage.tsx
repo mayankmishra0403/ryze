@@ -41,6 +41,7 @@ export function ChatPage() {
   const [userResults, setUserResults] = useState<SearchUser[]>([])
   const [socket, setSocket] = useState<AppSocket | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const activeRef = useRef<string | null>(null)
 
   const loadChats = useCallback(async (): Promise<ChatWithMeta[]> => {
     const data: ChatList = await getChats()
@@ -61,17 +62,32 @@ export function ChatPage() {
   useEffect(() => {
     const s = connectSocket()
     setSocket(s)
-    s.on('message:new', ({ chatId: _chatId, message }) => {
-      setMessages((prev) =>
-        prev.some((m) => m.id === message.id) ? prev : [...prev, message],
-      )
+    s.on('message:new', ({ chatId, message }) => {
+      if (chatId !== activeRef.current) return
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === message.id)) return prev
+        const pending = prev.find(
+          (m) =>
+            m.pending &&
+            m.chatId === message.chatId &&
+            m.senderId === message.senderId &&
+            m.content === message.content,
+        )
+        if (!pending) return [...prev, message]
+        return prev.map((m) => (m === pending ? { ...message, pending: false } : m))
+      })
     })
     s.on('presence:update', ({ userId, status }) => {
       setPresence((prev) => ({ ...prev, [userId]: status }))
     })
+    const rejoin = () => {
+      if (activeRef.current) s.emit('chat:join', activeRef.current)
+    }
+    s.on('connect', rejoin)
     return () => {
       s.off('message:new')
       s.off('presence:update')
+      s.off('connect', rejoin)
     }
   }, [])
 
@@ -83,11 +99,16 @@ export function ChatPage() {
     async (chat: ChatWithMeta) => {
       setActive(chat)
       setMessages([])
+      activeRef.current = chat.id
       socket?.emit('chat:leave', active?.id ?? '')
       socket?.emit('chat:join', chat.id)
       try {
         const data = await getChatMessages(chat.id)
-        setMessages(data.messages)
+        if (activeRef.current !== chat.id) return
+        setMessages((prev) => {
+          const fetched = new Set(data.messages.map((m) => m.id))
+          return [...data.messages, ...prev.filter((m) => m.pending && !fetched.has(m.id))]
+        })
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load messages')
       }
@@ -131,7 +152,21 @@ export function ChatPage() {
   const send = (e: FormEvent) => {
     e.preventDefault()
     if (!active || !draft.trim()) return
-    socket?.emit('chat:send', { chatId: active.id, content: draft.trim() })
+    const content = draft.trim()
+    socket?.emit('chat:send', { chatId: active.id, content })
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        chatId: active.id,
+        senderId: user?.id ?? '',
+        senderName: user?.name ?? '',
+        senderAvatar: user?.avatarUrl ?? null,
+        content,
+        createdAt: new Date().toISOString(),
+        pending: true,
+      },
+    ])
     setDraft('')
   }
 
