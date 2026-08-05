@@ -12,6 +12,7 @@ export function AuthPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [role, setRole] = useState<'student' | 'mentor'>('student')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const { login, register } = useAuth()
@@ -25,7 +26,7 @@ export function AuthPage() {
       if (mode === 'login') {
         await login(email, password)
       } else {
-        await register(name, email, password)
+        await register(name, email, password, role)
       }
       navigate('/dashboard')
     } catch (err) {
@@ -75,14 +76,48 @@ export function AuthPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'register' && (
-              <Input
-                id="name"
-                label="Full name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                autoComplete="name"
-              />
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-ink-500">
+                    I am joining as a
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRole('student')}
+                      className={`flex items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-bold transition-colors ${
+                        role === 'student'
+                          ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-xs'
+                          : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50'
+                      }`}
+                    >
+                      <span>🎓</span>
+                      <span>Student</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('mentor')}
+                      className={`flex items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-bold transition-colors ${
+                        role === 'mentor'
+                          ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-xs'
+                          : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50'
+                      }`}
+                    >
+                      <span>👨‍🏫</span>
+                      <span>Mentor</span>
+                    </button>
+                  </div>
+                </div>
+
+                <Input
+                  id="name"
+                  label="Full name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  autoComplete="name"
+                />
+              </>
             )}
             <Input
               id="email"

@@ -24,6 +24,7 @@ const registerSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email(),
   password: z.string().min(6).max(128),
+  role: z.enum(['student', 'mentor']).optional(),
 })
 
 const loginSchema = z.object({
@@ -48,6 +49,7 @@ authRouter.post(
         name: body.name,
         email: body.email,
         passwordHash,
+        role: body.role ?? 'student',
         isVerified: true,
       },
     })
