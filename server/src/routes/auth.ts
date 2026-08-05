@@ -24,7 +24,7 @@ const registerSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email(),
   password: z.string().min(6).max(128),
-  role: z.enum(['student', 'mentor']).optional(),
+  role: z.enum(['student', 'mentor', 'admin']).optional(),
 })
 
 const loginSchema = z.object({
