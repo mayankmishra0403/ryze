@@ -1,8 +1,17 @@
 import { mkdirSync } from 'node:fs'
-import { join, extname } from 'node:path'
+import { join, extname, isAbsolute } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import multer from 'multer'
 import { config } from '../config.js'
+
+/** Resolve the configured upload dir to an absolute path under process.cwd(). */
+export function uploadRoot(): string {
+  return isAbsolute(config.uploadDir)
+    ? config.uploadDir
+    : join(process.cwd(), config.uploadDir)
+}
+
+mkdirSync(uploadRoot(), { recursive: true })
 
 const ALLOWED_IMAGE = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml']
 const ALLOWED_DOCS = [
@@ -13,12 +22,10 @@ const ALLOWED_DOCS = [
   'text/markdown',
 ]
 
-mkdirSync(join(process.cwd(), config.uploadDir), { recursive: true })
-
 function makeStorage(subdir: string) {
   return multer.diskStorage({
     destination: (_req, _file, cb) => {
-      const dir = join(process.cwd(), config.uploadDir, subdir)
+      const dir = join(uploadRoot(), subdir)
       mkdirSync(dir, { recursive: true })
       cb(null, dir)
     },

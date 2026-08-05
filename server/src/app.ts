@@ -1,11 +1,11 @@
 import { createServer, type Server as HttpServer } from 'node:http'
 import { mkdirSync } from 'node:fs'
-import { join } from 'node:path'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
 import { config } from './config.js'
+import { uploadRoot } from './services/storage.js'
 import { healthRouter } from './routes/health.js'
 import { authRouter } from './routes/auth.js'
 import { profileRouter } from './routes/profile.js'
@@ -34,8 +34,8 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }))
   app.use(cookieParser())
 
-  mkdirSync(join(process.cwd(), config.uploadDir), { recursive: true })
-  app.use('/uploads', express.static(config.uploadDir))
+  mkdirSync(uploadRoot(), { recursive: true })
+  app.use('/uploads', express.static(uploadRoot()))
 
   app.use('/api', healthRouter)
   app.use('/api/auth', authRouter)
