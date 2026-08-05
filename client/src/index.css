@@ -12,17 +12,17 @@
   --color-brand-800: #3730a3;
   --color-brand-900: #312e81;
 
-  --color-ink-50: #f8fafc;
-  --color-ink-100: #f1f5f9;
-  --color-ink-200: #e2e8f0;
-  --color-ink-300: #cbd5e1;
-  --color-ink-400: #94a3b8;
-  --color-ink-500: #64748b;
-  --color-ink-600: #475569;
-  --color-ink-700: #334155;
-  --color-ink-800: #1e293b;
-  --color-ink-900: #0f172a;
-  --color-ink-950: #020617;
+  --color-ink-50: #0f172a;
+  --color-ink-100: #1e293b;
+  --color-ink-200: #334155;
+  --color-ink-300: #475569;
+  --color-ink-400: #64748b;
+  --color-ink-500: #94a3b8;
+  --color-ink-600: #cbd5e1;
+  --color-ink-700: #e2e8f0;
+  --color-ink-800: #f1f5f9;
+  --color-ink-900: #f8fafc;
+  --color-ink-950: #ffffff;
 }
 
 html,
@@ -33,15 +33,33 @@ body,
 
 body {
   margin: 0;
-  background-color: var(--color-ink-50);
-  color: var(--color-ink-900);
+  background-color: #0b0f19;
+  color: #f8fafc;
   font-family:
+    'Geist',
     ui-sans-serif,
     system-ui,
     -apple-system,
-    'Segoe UI',
-    Roboto,
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glassmorphism & Neon Glow Utilities */
+.glass-panel {
+  background: rgba(19, 24, 41, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(22, 30, 49, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.neon-border {
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
 }
