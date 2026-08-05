@@ -8,8 +8,7 @@ import {
   uploadNote,
   type TagCount,
 } from '../api/features'
-import { API_URL } from '../config'
-import { timeAgo, avatarUrl } from '../lib/format'
+import { timeAgo, avatarUrl, apiFileUrl } from '../lib/format'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { Input, Textarea } from '../components/ui/Input'
@@ -108,7 +107,7 @@ export function NotesPage() {
   const handleDownload = async (note: Note) => {
     trackDownload(note.id).catch(() => {})
     if (note.fileUrl) {
-      window.open(`${API_URL}${note.fileUrl}`, '_blank', 'noopener')
+      window.open(apiFileUrl(note.fileUrl), '_blank', 'noopener')
     }
   }
 
