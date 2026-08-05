@@ -12,7 +12,7 @@ export function AuthPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'student' | 'mentor' | 'admin'>('student')
+  const [role, setRole] = useState<'student' | 'mentor'>('student')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const { login, register } = useAuth()
@@ -81,11 +81,11 @@ export function AuthPage() {
                   <label className="text-xs font-semibold uppercase tracking-wider text-ink-500">
                     I am joining as a
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setRole('student')}
-                      className={`flex items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-bold transition-colors ${
+                      className={`flex items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-bold transition-colors ${
                         role === 'student'
                           ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-xs'
                           : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50'
@@ -97,7 +97,7 @@ export function AuthPage() {
                     <button
                       type="button"
                       onClick={() => setRole('mentor')}
-                      className={`flex items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-bold transition-colors ${
+                      className={`flex items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-bold transition-colors ${
                         role === 'mentor'
                           ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-xs'
                           : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50'
@@ -106,20 +106,17 @@ export function AuthPage() {
                       <span>👨‍🏫</span>
                       <span>Mentor</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setRole('admin')}
-                      className={`flex items-center justify-center gap-1.5 rounded-xl border p-2 text-xs font-bold transition-colors ${
-                        role === 'admin'
-                          ? 'border-purple-600 bg-purple-50 text-purple-700 shadow-xs'
-                          : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50'
-                      }`}
-                    >
-                      <span>🛡️</span>
-                      <span>Admin</span>
-                    </button>
                   </div>
                 </div>
+
+                {role === 'mentor' && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900">
+                    <p className="font-semibold">👨‍🏫 Mentor Verification Requirement</p>
+                    <p className="mt-0.5 opacity-90">
+                      Mentors must register using an official company, organization or college email (e.g. <code>name@company.com</code> or <code>name@edu.in</code>). Personal Gmail/Yahoo emails are not accepted for Mentor accounts.
+                    </p>
+                  </div>
+                )}
 
                 <Input
                   id="name"
@@ -133,8 +130,9 @@ export function AuthPage() {
             )}
             <Input
               id="email"
-              label="Email"
+              label={mode === 'register' && role === 'mentor' ? 'Work / Organization Email' : 'Email'}
               type="email"
+              placeholder={mode === 'register' && role === 'mentor' ? 'name@company.com or name@edu.in' : 'student@ryze.dev'}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

@@ -24,7 +24,7 @@ const registerSchema = z.object({
   name: z.string().min(2).max(80),
   email: z.string().email(),
   password: z.string().min(6).max(128),
-  role: z.enum(['student', 'mentor', 'admin']).optional(),
+  role: z.enum(['student', 'mentor']).optional(),
 })
 
 const loginSchema = z.object({
@@ -39,6 +39,25 @@ authRouter.post(
   authLimiter,
   asyncHandler(async (req, res) => {
     const body = registerSchema.parse(req.body)
+
+    if (body.role === 'mentor') {
+      const domain = body.email.split('@')[1]?.toLowerCase() || ''
+      const publicFreeDomains = [
+        'gmail.com',
+        'yahoo.com',
+        'hotmail.com',
+        'outlook.com',
+        'icloud.com',
+        'rediffmail.com',
+        'yandex.com',
+      ]
+      if (publicFreeDomains.includes(domain)) {
+        throw new HttpError(
+          400,
+          'Mentors must register with an organization, company or college work email (e.g. name@company.com or name@iit.ac.in)',
+        )
+      }
+    }
 
     const existing = await prisma.user.findUnique({ where: { email: body.email } })
     if (existing) throw new HttpError(409, 'An account with this email already exists')
