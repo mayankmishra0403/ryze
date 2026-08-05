@@ -56,6 +56,15 @@ export function getProfile(): Promise<ProfileBundle> {
   return http.get<ProfileBundle>('/profile/me')
 }
 
+export interface ActivitySummary {
+  activity: Record<string, number>
+  stats: { currentStreak: number; longestStreak: number; totalActiveDays: number }
+}
+
+export function getActivity(): Promise<ActivitySummary> {
+  return http.get<ActivitySummary>('/profile/me/activity')
+}
+
 export function updateProfile(input: UpdateProfileInput): Promise<{ profile: Profile }> {
   return http.put<{ profile: Profile }>('/profile/me', input)
 }

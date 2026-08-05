@@ -4,7 +4,7 @@ import { prisma } from '../db.js'
 import { asyncHandler, authGuard, type AuthedRequest } from '../middleware/auth.js'
 import { HttpError } from '../middleware/error.js'
 import { uploadAvatar, publicFileUrl } from '../services/storage.js'
-import { logEvent, notify } from '../services/activity.js'
+import { getActivitySummary, logEvent, notify } from '../services/activity.js'
 
 export const profileRouter = Router()
 
@@ -48,6 +48,13 @@ profileRouter.get(
         createdAt: user!.createdAt,
       },
     })
+  }),
+)
+
+profileRouter.get(
+  '/me/activity',
+  asyncHandler(async (req: AuthedRequest, res) => {
+    res.json(await getActivitySummary(req.userId!))
   }),
 )
 

@@ -406,6 +406,28 @@ describe('integration', () => {
       const missing = await api('/api/profile/does-not-exist', { token: a.token })
       assert.equal(missing.status, 404)
     })
+
+    test('activity summary reflects real activity', async () => {
+      const user = await registerUser()
+      await api('/api/posts', {
+        method: 'POST',
+        token: user.token,
+        body: { content: 'Heatmap post 1' },
+      })
+      await api('/api/posts', {
+        method: 'POST',
+        token: user.token,
+        body: { content: 'Heatmap post 2' },
+      })
+
+      const res = await api('/api/profile/me/activity', { token: user.token })
+      assert.equal(res.status, 200)
+      const todayKey = new Date().toISOString().slice(0, 10)
+      assert.equal(res.data.activity[todayKey], 2)
+      assert.equal(res.data.stats.currentStreak, 1)
+      assert.equal(res.data.stats.longestStreak, 1)
+      assert.equal(res.data.stats.totalActiveDays, 1)
+    })
   })
 
   describe('notes', () => {
