@@ -13,6 +13,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { Input, Textarea } from '../components/ui/Input'
 import { Badge, Card, EmptyState } from '../components/ui/Card'
+import { CodeEditorSandbox } from '../components/challenges/CodeEditorSandbox'
 import type { Challenge, ChallengeStats, LeaderboardEntry } from '../types'
 
 const DIFF_TONES: Record<string, 'green' | 'amber' | 'red'> = {
@@ -203,35 +204,18 @@ export function ChallengesPage() {
                 icon="✅"
               />
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-ink-700">Your solution</label>
-                  <select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="rounded-lg border border-ink-300 bg-white px-3 py-1.5 text-sm text-ink-900"
-                  >
-                    <option value="javascript">JavaScript</option>
-                    <option value="python">Python</option>
-                    <option value="cpp">C++</option>
-                    <option value="java">Java</option>
-                    <option value="typescript">TypeScript</option>
-                  </select>
-                </div>
-                <Textarea
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
-                  rows={10}
-                  className="font-mono text-xs"
-                  placeholder={`function solve(input) {\n  // your code here\n  return answer\n}`}
-                  required
-                />
-                <div className="flex justify-end">
-                  <Button type="submit" loading={submitting} disabled={!code.trim()}>
-                    Submit solution
-                  </Button>
-                </div>
-              </form>
+              <CodeEditorSandbox
+                initialCode={code}
+                language={language}
+                onLanguageChange={setLanguage}
+                onSubmitSolution={(solutionCode) => {
+                  setCode(solutionCode)
+                  const fakeEvent = { preventDefault: () => {} } as FormEvent
+                  handleSubmit(fakeEvent)
+                }}
+                submitting={submitting}
+                isSubmitted={Boolean(today?.submitted)}
+              />
             )}
           </div>
         ) : (

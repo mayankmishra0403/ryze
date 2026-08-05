@@ -14,6 +14,8 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { Input, Textarea } from '../components/ui/Input'
 import { Badge, Card, EmptyState } from '../components/ui/Card'
+import { BookmarkButton } from '../components/ui/BookmarkButton'
+import { DocumentViewerModal } from '../components/notes/DocumentViewerModal'
 import type { Note } from '../types'
 
 const ACCEPTED = '.pdf,.doc,.docx,.txt,.md'
@@ -26,6 +28,7 @@ export function NotesPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [previewNote, setPreviewNote] = useState<Note | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -278,32 +281,53 @@ export function NotesPage() {
                       ))}
                     </div>
                   )}
-                  <div className="mt-3 flex items-center gap-3 border-t border-ink-100 pt-3 text-xs text-ink-500">
-                    <span>⬇ {note.downloadCount} downloads</span>
-                    {note.authorId === user?.id && (
-                      <button
-                        type="button"
-                        className="text-red-600 hover:underline"
-                        onClick={() => void handleDelete(note)}
-                      >
-                        Delete
-                      </button>
-                    )}
+                  <div className="mt-3 flex items-center justify-between border-t border-ink-100 pt-3 text-xs text-ink-500">
+                    <div className="flex items-center gap-3">
+                      <span>⬇ {note.downloadCount} downloads</span>
+                      {note.authorId === user?.id && (
+                        <button
+                          type="button"
+                          className="text-red-600 hover:underline"
+                          onClick={() => void handleDelete(note)}
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                    <BookmarkButton itemId={note.id} itemType="note" title={note.title} />
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant={note.fileUrl ? 'primary' : 'secondary'}
-                  disabled={!note.fileUrl}
-                  onClick={() => void handleDownload(note)}
-                >
-                  Download
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    size="sm"
+                    variant={note.fileUrl ? 'primary' : 'secondary'}
+                    disabled={!note.fileUrl}
+                    onClick={() => void handleDownload(note)}
+                  >
+                    Download
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setPreviewNote(note)}
+                  >
+                    👁 Preview
+                  </Button>
+                </div>
               </div>
             </li>
           ))}
         </ul>
       )}
+
+      <DocumentViewerModal
+        note={previewNote}
+        onClose={() => setPreviewNote(null)}
+        onDownload={(id) => {
+          const n = notes.find((x) => x.id === id)
+          if (n) handleDownload(n)
+        }}
+      />
 
       {nextCursor && (
         <div className="text-center">

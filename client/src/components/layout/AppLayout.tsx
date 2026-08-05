@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { Button } from '../ui/Button'
 import { NotificationsBell } from '../notifications/NotificationsBell'
+import { CommandPalette } from '../ui/CommandPalette'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: '▦' },
@@ -16,6 +18,18 @@ const navItems = [
 export function AppLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState(false)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setIsCmdPaletteOpen((prev) => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const handleLogout = async () => {
     await logout()
@@ -24,6 +38,11 @@ export function AppLayout() {
 
   return (
     <div className="flex min-h-screen">
+      <CommandPalette
+        isOpen={isCmdPaletteOpen}
+        onClose={() => setIsCmdPaletteOpen(false)}
+      />
+
       <aside className="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-ink-200 bg-white">
         <div className="flex items-center gap-2 border-b border-ink-200 px-5 py-4">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 font-black text-white">
@@ -74,8 +93,20 @@ export function AppLayout() {
       </aside>
 
       <main className="ml-60 flex min-h-screen flex-1 flex-col">
-        <header className="flex items-center justify-end border-b border-ink-200 bg-white px-8 py-3">
-          <NotificationsBell />
+        <header className="flex items-center justify-between border-b border-ink-200 bg-white px-8 py-3">
+          <button
+            onClick={() => setIsCmdPaletteOpen(true)}
+            className="flex items-center gap-3 rounded-xl border border-ink-200 bg-ink-50 px-3.5 py-1.5 text-xs text-ink-500 transition-colors hover:border-ink-300 hover:bg-ink-100"
+          >
+            <span>🔍 Search or type command...</span>
+            <kbd className="rounded-md border border-ink-200 bg-white px-1.5 py-0.5 font-semibold text-ink-600">
+              ⌘K
+            </kbd>
+          </button>
+
+          <div className="flex items-center gap-4">
+            <NotificationsBell />
+          </div>
         </header>
         <div className="flex-1 px-8 py-8">
           <Outlet />
@@ -84,3 +115,4 @@ export function AppLayout() {
     </div>
   )
 }
+

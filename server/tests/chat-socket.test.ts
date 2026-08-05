@@ -109,9 +109,17 @@ describe('realtime chat (socket.io)', () => {
     const socketB = await connect(b.accessToken)
 
     try {
-      const presence = once(socketB, 'presence:update')
+      const presencePromise = new Promise<{ userId: string; status: string }>((resolve) => {
+        const handler = (data: { userId: string; status: string }) => {
+          if (data.userId === a.user.id) {
+            socketB.off('presence:update', handler)
+            resolve(data)
+          }
+        }
+        socketB.on('presence:update', handler)
+      })
       const socketA = await connect(a.accessToken)
-      const p = (await presence) as { userId: string; status: string }
+      const p = await presencePromise
       assert.equal(p.userId, a.user.id)
       assert.equal(p.status, 'online')
 

@@ -19,6 +19,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { Input, Textarea } from '../components/ui/Input'
 import { Badge, Card, EmptyState } from '../components/ui/Card'
+import { RichContent } from '../components/ui/RichContent'
 import type {
   Company,
   CompanyDetail,
@@ -943,7 +944,10 @@ function ExperiencesTab({ onError }: { onError: (e: unknown) => void }) {
                 </div>
                 <span className="text-sm text-amber-500">{'★'.repeat(exp.rating ?? 0)}{'☆'.repeat(5 - (exp.rating ?? 0))}</span>
               </div>
-              <p className="mt-2 text-sm text-ink-700">{exp.summary}</p>
+              <div className="mt-2 border-t border-ink-100 pt-2">
+                <p className="text-sm font-semibold text-ink-800">{exp.summary}</p>
+                <RichContent content={exp.content} className="mt-2 text-ink-700" />
+              </div>
             </li>
           ))}
         </ul>

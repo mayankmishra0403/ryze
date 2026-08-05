@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button'
 import { Input, Textarea } from '../components/ui/Input'
 import { Card, Badge } from '../components/ui/Card'
 import { Spinner } from '../components/ui/Button'
+import { ActivityHeatmap } from '../components/profile/ActivityHeatmap'
 
 export function ProfilePage() {
   const [bundle, setBundle] = useState<ProfileBundle | null>(null)
@@ -144,6 +145,10 @@ export function ProfilePage() {
         </p>
       )}
 
+      <ActivityHeatmap />
+
+      <SavedBookmarksCard />
+
       <Card title="Details">
         <form onSubmit={handleSubmit} className="space-y-4">
           <Textarea
@@ -203,5 +208,59 @@ export function ProfilePage() {
         </form>
       </Card>
     </div>
+  )
+}
+
+function SavedBookmarksCard() {
+  const [bookmarks, setBookmarks] = useState<
+    { id: string; type: string; title: string; savedAt: string }[]
+  >([])
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('ryze_bookmarks') || '[]')
+      setBookmarks(saved)
+    } catch {
+      setBookmarks([])
+    }
+  }, [])
+
+  const removeBookmark = (id: string) => {
+    const updated = bookmarks.filter((b) => b.id !== id)
+    localStorage.setItem('ryze_bookmarks', JSON.stringify(updated))
+    setBookmarks(updated)
+  }
+
+  return (
+    <Card
+      title="Saved Bookmarks 🔖"
+      subtitle="Quick access to notes, PYQs, and jobs you've saved for revision"
+    >
+      {bookmarks.length === 0 ? (
+        <div className="py-6 text-center text-xs text-ink-400">
+          No bookmarks saved yet. Click &quot;🔖 Bookmark&quot; on any note or job to save it here!
+        </div>
+      ) : (
+        <ul className="divide-y divide-ink-100">
+          {bookmarks.map((bm) => (
+            <li key={bm.id} className="flex items-center justify-between py-2.5 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="rounded-md bg-brand-50 px-2 py-0.5 font-bold uppercase tracking-wider text-brand-700 text-[10px]">
+                  {bm.type}
+                </span>
+                <span className="font-semibold text-ink-800">{bm.title}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeBookmark(bm.id)}
+                className="text-red-500 hover:text-red-700"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   )
 }

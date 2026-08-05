@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
+import { ToastProvider } from './components/ui/Toast'
 import { AppLayout } from './components/layout/AppLayout'
 import { Spinner } from './components/ui/Button'
 import { AuthPage } from './pages/AuthPage'
@@ -40,37 +41,39 @@ function GuestOnly({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              <GuestOnly>
-                <AuthPage />
-              </GuestOnly>
-            }
-          />
-          <Route
-            element={
-              <Protected>
-                <AppLayout />
-              </Protected>
-            }
-          >
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/feed" element={<FeedPage />} />
-            <Route path="/placement" element={<PlacementPage />} />
-            <Route path="/challenges" element={<ChallengesPage />} />
-            <Route path="/notes" element={<NotesPage />} />
-            <Route path="/startup" element={<StartupPage />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-          </Route>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                <GuestOnly>
+                  <AuthPage />
+                </GuestOnly>
+              }
+            />
+            <Route
+              element={
+                <Protected>
+                  <AppLayout />
+                </Protected>
+              }
+            >
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/feed" element={<FeedPage />} />
+              <Route path="/placement" element={<PlacementPage />} />
+              <Route path="/challenges" element={<ChallengesPage />} />
+              <Route path="/notes" element={<NotesPage />} />
+              <Route path="/startup" element={<StartupPage />} />
+              <Route path="/chat" element={<ChatPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+            </Route>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ToastProvider>
   )
 }

@@ -7,6 +7,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Button } from '../components/ui/Button'
 import { Textarea, Input } from '../components/ui/Input'
 import { Badge, EmptyState } from '../components/ui/Card'
+import { RichContent } from '../components/ui/RichContent'
 import type { Comment, Post } from '../types'
 
 export function FeedPage() {
@@ -228,9 +229,7 @@ export function FeedPage() {
                     </span>
                     <span className="text-xs text-ink-400">{timeAgo(post.createdAt)}</span>
                   </div>
-                  <p className="mt-1 whitespace-pre-wrap text-sm text-ink-800">
-                    {post.content}
-                  </p>
+                  <RichContent content={post.content} className="mt-1 text-ink-800" />
                   {post.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {post.tags.map((tag) => (
