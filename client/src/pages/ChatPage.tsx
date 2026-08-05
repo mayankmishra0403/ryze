@@ -23,8 +23,9 @@ interface ChatWithMeta extends Chat {
 
 export function ChatPage() {
   const { user } = useAuth()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const targetUserId = searchParams.get('userId')
+  const handledTargetRef = useRef<string | null>(null)
 
   const [chats, setChats] = useState<ChatWithMeta[]>([])
   const [active, setActive] = useState<ChatWithMeta | null>(null)
@@ -116,12 +117,16 @@ export function ChatPage() {
     }
   }, [openById])
 
-  // Handle URL param targetUserId (e.g. /chat?userId=xyz)
+  // Handle URL param targetUserId (e.g. /chat?userId=xyz). Runs once per target:
+  // clears the param and opens/starts that DM, so switching chats later doesn't
+  // yank the user back to the URL target.
   useEffect(() => {
-    if (!loading && targetUserId && user?.id) {
-      startDm(targetUserId)
-    }
-  }, [loading, targetUserId, user?.id, startDm])
+    if (loading || !targetUserId || !user?.id) return
+    if (handledTargetRef.current === targetUserId) return
+    handledTargetRef.current = targetUserId
+    setSearchParams({}, { replace: true })
+    startDm(targetUserId)
+  }, [loading, targetUserId, user?.id, startDm, setSearchParams])
 
   const send = (e: FormEvent) => {
     e.preventDefault()
