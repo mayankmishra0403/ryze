@@ -60,6 +60,15 @@ describe('integration', () => {
   before(async () => {
     loadEnv({ path: '.env.test' })
     process.env.DATABASE_URL = 'postgresql://ryze:ryze@localhost:5433/ryze_test'
+    const { prisma } = await import('../src/db.js')
+    // Wipe the test DB so runs are deterministic regardless of accumulated data.
+    await prisma.$executeRawUnsafe(`
+      DO $$ DECLARE r RECORD; BEGIN
+        FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+          EXECUTE 'TRUNCATE TABLE public.' || quote_ident(r.tablename) || ' CASCADE';
+        END LOOP;
+      END $$;
+    `)
     const { createHttpServer } = await import('../src/app.js')
     httpServer = createHttpServer()
     await new Promise<void>((resolve) => httpServer.listen(0, resolve))

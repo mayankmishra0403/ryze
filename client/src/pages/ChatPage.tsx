@@ -118,10 +118,15 @@ export function ChatPage() {
     }
   }
 
-  const handleSearch = async () => {
-    const data = await searchUsers(query)
-    setUserResults(data.users)
-  }
+  useEffect(() => {
+    if (!showUsers) return
+    const timer = setTimeout(() => {
+      searchUsers(query.trim())
+        .then((data) => setUserResults(data.users))
+        .catch(() => setUserResults([]))
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [query, showUsers])
 
   const createNewChannel = async () => {
     if (!channelName.trim()) return
@@ -162,27 +167,32 @@ export function ChatPage() {
               </Button>
             </div>
             {showUsers ? (
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <Input placeholder="Search users…" value={query} onChange={(e) => setQuery(e.target.value)} />
-                  <Button size="sm" onClick={() => void handleSearch()}>Go</Button>
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Search users…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                  {userResults.length === 0 ? (
+                    <p className="px-2 py-3 text-center text-xs text-ink-400">No users found</p>
+                  ) : (
+                    <ul className="max-h-40 space-y-1 overflow-y-auto">
+                      {userResults.map((u) => (
+                        <li key={u.id}>
+                          <button
+                            type="button"
+                            onClick={() => void startDm(u.id)}
+                            className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-ink-50"
+                          >
+                            <img src={avatarUrl(u.avatarUrl, u.name)} alt="" className="h-6 w-6 rounded-full" />
+                            <span className="text-sm">{u.name}</span>
+                            <span className="ml-auto text-xs text-ink-400">{u.role}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-                <ul className="max-h-40 space-y-1 overflow-y-auto">
-                  {userResults.map((u) => (
-                    <li key={u.id}>
-                      <button
-                        type="button"
-                        onClick={() => void startDm(u.id)}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-ink-50"
-                      >
-                        <img src={avatarUrl(u.avatarUrl, u.name)} alt="" className="h-6 w-6 rounded-full" />
-                        <span className="text-sm">{u.name}</span>
-                        <span className="ml-auto text-xs text-ink-400">{u.role}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             ) : (
               <div className="flex gap-2">
                 <Input placeholder="Channel name" value={channelName} onChange={(e) => setChannelName(e.target.value)} />
